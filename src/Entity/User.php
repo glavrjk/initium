@@ -42,9 +42,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Content::class, mappedBy: 'createdBy', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $contents;
 
+    #[ORM\OneToMany(targetEntity: AccessToken::class, mappedBy: 'ownedBy', orphanRemoval: true)]
+    private Collection $accessTokens;
+
     public function __construct()
     {
         $this->contents = new ArrayCollection();
+        $this->accessTokens = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -133,6 +137,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getContents(): Collection
     {
         return $this->contents;
+    }
+
+    /**
+     * @return Collection<int, AccessToken>
+     */
+    public function getAccessTokens(): Collection
+    {
+        return $this->accessTokens;
     }
 
 }

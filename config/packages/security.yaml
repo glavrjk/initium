@@ -17,9 +17,15 @@ security:
             lazy: true
             provider: app_user_provider
             json_login:
-                # api_login is a route we will create below
-                check_path: api_login
-
+                check_path: app_api_login
+                username_path: username
+                password_path: password
+            logout:
+                path: /logout
+            stateless: true
+            access_token:
+                token_handler: App\Security\ApiTokenHandler
+                token_extractors: header
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall
 
@@ -29,8 +35,7 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: '^/', roles: PUBLIC_ACCESS }
 
 when@test:
     security:
