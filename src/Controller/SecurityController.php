@@ -58,9 +58,6 @@ final class SecurityController extends AbstractController
         ]);
     }
 
-    /**
-     * @throws JsonException
-     */
     #[Route('/register', name: 'register', methods: ['POST'])]
     #[OA\RequestBody(
         content: new Model(type: User::class, groups: ["create"])

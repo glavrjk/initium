@@ -45,9 +45,6 @@ final class UserController extends AbstractController
         );
     }
 
-    /**
-     * @throws JsonException
-     */
     #[Route(name: 'app_user_edit', methods: ['PUT'])]
     #[OA\RequestBody(
         content: new Model(type: User::class, groups: ["create"])

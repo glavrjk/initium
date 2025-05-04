@@ -4,8 +4,11 @@ namespace App\Entity;
 
 use App\Repository\ContentRepository;
 use DateTime;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Serializer\Attribute\SerializedPath;
 
@@ -20,11 +23,11 @@ class Content
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["default","create"])]
+    #[Groups(["default", "create"])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(["default","create"])]
+    #[Groups(["default", "create"])]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
@@ -34,11 +37,16 @@ class Content
     #[ORM\ManyToOne(targetEntity: User::class, fetch: 'EXTRA_LAZY', inversedBy: 'contents')]
     #[SerializedPath('[createdBy][username]')]
     #[Groups(["default"])]
-    private ?User $createdBy = null;
+    private User|UserInterface $createdBy;
 
-    public function __construct()
+    #[ORM\OneToMany(targetEntity: Medias::class, mappedBy: 'content', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $medias;
+
+    public function __construct(User|UserInterface $user)
     {
+        $this->createdBy = $user;
         $this->createdAt = new DateTime('now');
+        $this->medias = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -80,14 +88,19 @@ class Content
         $this->createdAt = $createdAt;
     }
 
-    public function getCreatedBy(): ?User
+    public function getCreatedBy(): User|UserInterface
     {
         return $this->createdBy;
     }
 
-    public function setCreatedBy(?User $createdBy): void
+    public function setCreatedBy(User|UserInterface $createdBy): void
     {
         $this->createdBy = $createdBy;
+    }
+
+    public function getMedias(): Collection
+    {
+        return $this->medias;
     }
 
 }

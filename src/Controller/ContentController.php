@@ -14,14 +14,16 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/content', name: 'app_content_')]
+#[IsGranted('ROLE_USER')]
+#[Security(name: "Bearer")]
+#[OA\Tag(name: 'ContentController')]
 #[OA\Response(
     response: Response::HTTP_BAD_REQUEST, description: 'Error',
     content: new OA\JsonContent(type: "object", example: ['errors' => []])
 )]
-#[OA\Tag(name: 'ContentController')]
-#[Security(name: "Bearer")]
 final class ContentController extends AbstractController
 {
     #[Route(name: 'index', methods: ['GET'])]
@@ -34,7 +36,7 @@ final class ContentController extends AbstractController
 
     #[Route(name: 'new', methods: ['POST'])]
     #[OA\RequestBody(
-        content: new Model(type: Content::class, groups: ["create"])
+        content: new OA\JsonContent(type: "object", example: ['data' => new Model(type: Content::class, groups: ["create"])])
     )]
     #[OA\Response(
         response: Response::HTTP_CREATED, description: 'Successful',
@@ -45,7 +47,7 @@ final class ContentController extends AbstractController
         EntityManagerInterface $entityManager
     ): JsonResponse
     {
-        $content = new Content();
+        $content = new Content($this->getUser());
         $form = $this->createForm(ContentForm::class, $content);
         $form->handleRequest($request);
 
