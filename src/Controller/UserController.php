@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\AccessToken;
 use App\Entity\User;
 use App\Form\UserForm;
 use App\Service\FormErrorService;
@@ -17,59 +16,43 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('/api', name: 'app_api_')]
-#[Security(name: null)]
-#[OA\Tag(name: 'SecurityController')]
+#[Route('/api/user', name: 'app_user_')]
+#[IsGranted('ROLE_USER')]
+#[Security(name: "Bearer")]
+#[OA\Tag(name: 'UserController')]
 #[OA\Response(
     response: Response::HTTP_BAD_REQUEST, description: 'Error',
     content: new OA\JsonContent(type: "object", example: ['errors' => []])
 )]
-final class SecurityController extends AbstractController
+#[OA\Response(
+    response: Response::HTTP_OK, description: 'Successful',
+    content: new Model(type: User::class, groups: ["default"])
+)]
+final class UserController extends AbstractController
 {
-    #[Route('/login', name: 'login', methods: ['POST'])]
-    #[OA\Response(
-        response: Response::HTTP_OK, description: 'Successful',
-        content: new OA\JsonContent(type: "object", example: ['username' => "string", 'token' => "string"])
-    )]
-    #[OA\RequestBody(
-        content: new OA\JsonContent(type: "object", example: ['username' => "string", 'password' => "string"])
-    )]
-    public function login(
-        EntityManagerInterface $entityManager,
-        #[CurrentUser] ?User   $user = null,
+    #[Route(name: 'app_user_show', methods: ['GET'])]
+    public function show(
+        SerializerInterface $serializer
     ): JsonResponse
     {
-        if (!$user) {
-            return $this->json([
-                'message' => 'bad credentials',
-            ], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $token = new AccessToken($user);
-        $entityManager->persist($token);
-        $entityManager->flush();
-
-        return $this->json([
-            'username' => $user->getUserIdentifier(),
-            'token' => $token->getToken()
-        ]);
+        return new JsonResponse(
+            data: $serializer->serialize($this->getUser(), 'json', ['groups' => 'default']),
+            status: Response::HTTP_CREATED,
+            json: true
+        );
     }
 
     /**
      * @throws JsonException
      */
-    #[Route('/register', name: 'register', methods: ['POST'])]
+    #[Route(name: 'app_user_edit', methods: ['PUT'])]
     #[OA\RequestBody(
         content: new Model(type: User::class, groups: ["create"])
     )]
-    #[OA\Response(
-        response: Response::HTTP_OK, description: 'Successful',
-        content: new Model(type: User::class, groups: ["default"])
-    )]
-    public function register(
+    public function edit(
         Request                     $request,
         UserPasswordHasherInterface $passwordEncoder,
         EntityManagerInterface      $entityManager,
@@ -77,7 +60,7 @@ final class SecurityController extends AbstractController
         SerializerInterface         $serializer
     ): JsonResponse
     {
-        $user = new User();
+        $user = $this->getUser();
         $form = $this->createForm(UserForm::class, $user);
 
         try {
@@ -86,16 +69,16 @@ final class SecurityController extends AbstractController
             return $this->json(['errors' => 'Invalid Request Body'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!isset($data['password'])) {
-            return $this->json(['errors' => 'Password cannot be empty'], Response::HTTP_BAD_REQUEST);
-        }
-
         $form->submit($data, false);
         if ($form->isSubmitted() && $form->isValid()) {
-            //ENCODE PASSWORD
-            $user->setPassword(
-                $passwordEncoder->hashPassword($user, $form->get('password')->getData())
-            );
+
+            if ($newPassword = $form->get('password')->getData()) {
+                //ENCODE PASSWORD
+                $user->setPassword(
+                    $passwordEncoder->hashPassword($user, $newPassword)
+                );
+            }
+
             $entityManager->persist($user);
             $entityManager->flush();
 
@@ -108,4 +91,5 @@ final class SecurityController extends AbstractController
 
         return $this->json($formErrorService->getErrorMessages($form), Response::HTTP_BAD_REQUEST);
     }
+
 }

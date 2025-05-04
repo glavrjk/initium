@@ -40,11 +40,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private array $roles;
 
     #[ORM\Column]
-    #[Ignore]
+    #[Groups(["create"])]
     private ?string $password = null;
 
     #[ORM\OneToMany(targetEntity: Content::class, mappedBy: 'createdBy', cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[Ignore]
+    #[Groups(["default"])]
     private Collection $contents;
 
     #[ORM\OneToMany(targetEntity: AccessToken::class, mappedBy: 'ownedBy', orphanRemoval: true)]
