@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Serializer\Attribute\Ignore;
 use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -25,30 +26,37 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 180)]
     #[Assert\NotBlank]
+    #[Groups(["default", "create"])]
     private ?string $username = null;
 
     #[ORM\Column(type: Types::STRING, length: 180)]
     #[Assert\NotBlank]
+    #[Assert\Email]
+    #[Groups(["default", "create"])]
     private ?string $email = null;
 
     #[ORM\Column]
     #[Ignore]
-    private array $roles = [];
+    private array $roles;
 
     #[ORM\Column]
     #[Ignore]
     private ?string $password = null;
 
     #[ORM\OneToMany(targetEntity: Content::class, mappedBy: 'createdBy', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[Ignore]
     private Collection $contents;
 
     #[ORM\OneToMany(targetEntity: AccessToken::class, mappedBy: 'ownedBy', orphanRemoval: true)]
+    #[Ignore]
     private Collection $accessTokens;
 
     public function __construct()
     {
         $this->contents = new ArrayCollection();
         $this->accessTokens = new ArrayCollection();
+        //DEFAULT ROLE
+        $this->roles = ['ROLE_USER'];
     }
 
     public function getId(): ?int
@@ -73,6 +81,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      *
      * @see UserInterface
      */
+    #[Ignore]
     public function getUserIdentifier(): string
     {
         return (string)$this->username;
@@ -84,9 +93,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
