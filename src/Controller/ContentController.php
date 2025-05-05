@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Content;
 use App\Entity\Media;
-use App\Entity\User;
 use App\Form\ContentType;
 use App\Repository\ContentRepository;
 use App\Service\FileHandlerService;
@@ -22,7 +21,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 
 #[Route('/api/content', name: 'app_content_')]
@@ -44,7 +42,7 @@ final class ContentController extends AbstractController
     public function __construct(
         private readonly SerializerInterface    $serializer,
         private readonly EntityManagerInterface $entityManager,
-        private readonly FormHandlerService     $formHandlerService,
+        private readonly FormHandlerService     $formHandlerService, private readonly FileHandlerService $fileHandlerService,
     )
     {
     }
@@ -140,17 +138,20 @@ final class ContentController extends AbstractController
 
     #[Route('/{id}', name: 'delete', methods: ['DELETE'], format: 'json')]
     public function delete(
-        Request                $request,
         Content                $content,
         EntityManagerInterface $entityManager
     ): JsonResponse
     {
-        if ($this->isCsrfTokenValid('delete' . $content->getId(), $request->getPayload()->getString('_token'))) {
+        if ($this->getUser()->getUserIdentifier() === $content->getCreatedBy()->getUserIdentifier()) {
+            foreach ($content->getMedias() as $media) {
+                $this->fileHandlerService->remove($media->getFileName());
+            }
             $entityManager->remove($content);
             $entityManager->flush();
+            return $this->json('Operation success', Response::HTTP_SEE_OTHER);
         }
 
-        return $this->json($content, Response::HTTP_SEE_OTHER);
+        return $this->json(['errors' => ['You are not allowed for this action']], Response::HTTP_FORBIDDEN);
     }
 
     public function serializeContent(

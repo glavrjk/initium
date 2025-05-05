@@ -4,15 +4,14 @@ namespace App\Service;
 
 use Exception;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
-use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\String\Slugger\SluggerInterface;
 
 readonly class FileHandlerService
 {
     public function __construct(
-        private Security         $security,
+        private Security $security
     )
     {
     }
@@ -29,9 +28,13 @@ readonly class FileHandlerService
         return $fileName;
     }
 
-    public function remove(File $file): void
+    public function remove(string $fileName): void
     {
-
+        $filesystem = new Filesystem();
+        $route = $this->getTargetDirectory() . $fileName;
+        if ($filesystem->exists($route)) {
+            $filesystem->remove($route);
+        }
     }
 
     public function getTargetDirectory(): string
