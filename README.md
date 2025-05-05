@@ -17,10 +17,11 @@ $ docker compose up -d
 * [PHPMyAdmin](http://localhost:8080) (root:password)
 
 ### Sugerencias
-* Separar el CRUD de Medias del contexto Contenidos
-* Implementar Paginaciones a los listados de Contenidos
-* Implementar Rate Total para los Contenidos
-* Implementar DTOs y Mappers para los Metodos 
+* Separar el CRUD de Medias del contexto Contenidos.
+* Implementar Paginaciones a los listados de Contenidos.
+* Implementar Rate Total para los Contenidos.
+* Implementar DTOs y Mappers para las Requests. 
+* Implementar Test Unitarios para los CRUD.
 
 ### Desarrollador:
 * Ing. Gilberto Carrillo <glavrjk@gmail.com>
