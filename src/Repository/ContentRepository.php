@@ -16,28 +16,25 @@ class ContentRepository extends ServiceEntityRepository
         parent::__construct($registry, Content::class);
     }
 
-    //    /**
-    //     * @return Content[] Returns an array of Content objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('c.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Content
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * @return Content[] Returns an array of Content objects
+     */
+    public function findContentsBy(?string $title = null, ?string $description = null): array
+    {
+        $query = $this->createQueryBuilder('c');
+        if ($title) {
+            $query
+                ->andWhere('c.title LIKE :title')
+                ->setParameter('title', '%' . $title . '%');
+        }
+        if ($description) {
+            $query
+                ->orWhere('c.description LIKE :description')
+                ->setParameter('description', '%' . $description . '%');
+        }
+        return $query
+            ->orderBy('c.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

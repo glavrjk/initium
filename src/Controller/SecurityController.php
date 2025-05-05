@@ -20,7 +20,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('/api', name: 'app_api_')]
+#[Route('/api', name: 'app_api_', format: 'json')]
 #[Security(name: null)]
 #[OA\Tag(name: 'SecurityController')]
 #[OA\Response(

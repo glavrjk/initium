@@ -157,6 +157,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->accessTokens;
     }
 
+    public function getFavorites(): Collection
+    {
+        return $this->favorites;
+    }
+
     public function addFavorite(Content $content): void
     {
         if (!$this->favorites->contains($content)) {
@@ -170,6 +175,5 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->favorites->removeElement($content);
         }
     }
-
 
 }

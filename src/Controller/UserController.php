@@ -19,7 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('/api/user', name: 'app_user_')]
+#[Route('/api/user', name: 'app_user_', format: 'json')]
 #[IsGranted('ROLE_USER')]
 #[Security(name: "Bearer")]
 #[OA\Tag(name: 'UserController')]
@@ -33,7 +33,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 )]
 final class UserController extends AbstractController
 {
-    #[Route(name: 'app_user_show', methods: ['GET'], format: 'json')]
+    #[Route(name: 'app_user_show', methods: ['GET'])]
     public function show(
         SerializerInterface $serializer
     ): JsonResponse
@@ -48,7 +48,7 @@ final class UserController extends AbstractController
     #[OA\RequestBody(
         content: new Model(type: UserType::class, groups: ["create"])
     )]
-    #[Route(name: 'app_user_edit', methods: [Request::METHOD_PUT], format: 'json')]
+    #[Route(name: 'app_user_edit', methods: [Request::METHOD_PUT])]
     public function edit(
         Request                     $request,
         UserPasswordHasherInterface $passwordEncoder,

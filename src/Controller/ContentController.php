@@ -19,14 +19,14 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/content', name: 'app_content_')]
+#[Route('/api/content', name: 'app_content_', format: 'json')]
 #[IsGranted('ROLE_USER')]
 #[Security(name: "Bearer")]
 #[OA\Tag(name: 'ContentController')]
@@ -41,21 +41,27 @@ final class ContentController extends AbstractController
         private readonly SerializerInterface    $serializer,
         private readonly EntityManagerInterface $entityManager,
         private readonly FormHandlerService     $formHandlerService,
-        private readonly FileHandlerService     $fileHandlerService,
-        private readonly ValidatorInterface     $validator,
+        private readonly FileHandlerService     $fileHandlerService
     )
     {
     }
 
-    #[Route(name: 'index', methods: ['GET'], format: 'json')]
+    #[Route(name: 'index', methods: ['GET'])]
+    #[OA\Response(
+        response: Response::HTTP_OK, description: 'Successful',
+        content: new Model(type: Content::class, groups: ["default"])
+    )]
     public function index(
-        ContentRepository $contentRepository
+        ContentRepository            $contentRepository,
+        #[MapQueryParameter] ?string $title = null,
+        #[MapQueryParameter] ?string $description = null
     ): JsonResponse
     {
-        return $this->json($contentRepository->findAll(), Response::HTTP_OK);
+        $data = $contentRepository->findContentsBy($title, $description);
+        return new JsonResponse(data: $this->serializeContent($data), status: Response::HTTP_OK, json: true);
     }
 
-    #[Route(name: 'new', methods: ['POST'], format: 'json')]
+    #[Route(name: 'new', methods: ['POST'])]
     #[OA\Response(
         response: Response::HTTP_CREATED, description: 'Successful',
         content: new Model(type: Content::class, groups: ["default"])
@@ -97,7 +103,6 @@ final class ContentController extends AbstractController
                     $this->entityManager->persist($media);
                 }
                 $this->entityManager->flush();
-
                 return new JsonResponse(data: $this->serializeContent($content), status: Response::HTTP_CREATED, json: true);
 
             } catch (FileException $e) {
@@ -107,9 +112,9 @@ final class ContentController extends AbstractController
         return $this->json($this->formHandlerService->getErrorMessages($form), Response::HTTP_BAD_REQUEST);
     }
 
-    #[Route('/{id}', name: 'show', methods: ['GET'], format: 'json')]
+    #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[OA\Response(
-        response: Response::HTTP_CREATED, description: 'Successful',
+        response: Response::HTTP_OK, description: 'Successful',
         content: new Model(type: Content::class, groups: ["default"])
     )]
     public function show(
@@ -119,7 +124,7 @@ final class ContentController extends AbstractController
         return new JsonResponse(data: $this->serializeContent($content), status: Response::HTTP_OK, json: true);
     }
 
-    #[Route('/{id}', name: 'edit', methods: ['PUT'])]
+    #[Route('/{id}', name: 'edit', requirements: ['id' => '\d+'], methods: ['PUT'])]
     #[OA\Response(
         response: Response::HTTP_CREATED, description: 'Successful',
         content: new Model(type: Content::class, groups: ["default"])
@@ -171,10 +176,10 @@ final class ContentController extends AbstractController
     }
 
     #[OA\Response(
-        response: Response::HTTP_CREATED, description: 'Successful',
+        response: Response::HTTP_OK, description: 'Successful',
         content: new OA\JsonContent(type: "string", example: 'Operation success')
     )]
-    #[Route('/{id}', name: 'delete', methods: ['DELETE'], format: 'json')]
+    #[Route('/{id}', name: 'delete', requirements: ['id' => '\d+'], methods: ['DELETE'])]
     public function delete(Content $content): JsonResponse
     {
         if ($this->getUser()->getUserIdentifier() === $content->getCreatedBy()->getUserIdentifier()) {
@@ -190,10 +195,10 @@ final class ContentController extends AbstractController
     }
 
     #[OA\Response(
-        response: Response::HTTP_CREATED, description: 'Successful',
+        response: Response::HTTP_OK, description: 'Successful',
         content: new OA\JsonContent(type: "string", example: 'Operation success')
     )]
-    #[Route('/{id}/media/{mediaId}', name: 'media_delete', methods: ['DELETE'], format: 'json')]
+    #[Route('/{id}/media/{mediaId}', name: 'media_delete', requirements: ['id' => '\d+', 'mediaId' => '\d+'], methods: ['DELETE'])]
     public function deleteMedia(
         Content $content,
         Media   $mediaId
@@ -213,10 +218,21 @@ final class ContentController extends AbstractController
     }
 
     #[OA\Response(
-        response: Response::HTTP_CREATED, description: 'Successful',
+        response: Response::HTTP_OK, description: 'Successful',
+        content: new Model(type: Content::class, groups: ["default"])
+    )]
+    #[Route('/favorites', name: 'favorites', methods: ['GET'])]
+    public function favorites(): JsonResponse
+    {
+        $data =$this->getUser()->getFavorites();
+        return new JsonResponse(data: $this->serializeContent($data->toArray()), status: Response::HTTP_OK, json: true);
+    }
+
+    #[OA\Response(
+        response: Response::HTTP_OK, description: 'Successful',
         content: new OA\JsonContent(type: "string", example: 'Operation success')
     )]
-    #[Route('/{id}/favorite', name: 'add_favorite', methods: ['POST'], format: 'json')]
+    #[Route('/{id}/favorite', name: 'add_favorite', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function addFavorite(Content $content): JsonResponse
     {
         if ($user = $this->getUser()) {
@@ -228,10 +244,10 @@ final class ContentController extends AbstractController
     }
 
     #[OA\Response(
-        response: Response::HTTP_CREATED, description: 'Successful',
+        response: Response::HTTP_OK, description: 'Successful',
         content: new OA\JsonContent(type: "string", example: 'Operation success')
     )]
-    #[Route('/{id}/favorite', name: 'remove_favorite', methods: ['DELETE'], format: 'json')]
+    #[Route('/{id}/favorite', name: 'remove_favorite', requirements: ['id' => '\d+'], methods: ['DELETE'])]
     public function removeFavorite(Content $content): JsonResponse
     {
         if ($user = $this->getUser()) {
@@ -243,10 +259,10 @@ final class ContentController extends AbstractController
     }
 
     #[OA\Response(
-        response: Response::HTTP_CREATED, description: 'Successful',
+        response: Response::HTTP_OK, description: 'Successful',
         content: new OA\JsonContent(type: "string", example: 'Operation success')
     )]
-    #[Route('/{id}/rate', name: 'rate', methods: ['POST'], format: 'json')]
+    #[Route('/{id}/rate', name: 'rate', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function rate(
         Content                          $content,
         #[MapRequestPayload] ContentRate $contentRate
@@ -261,7 +277,7 @@ final class ContentController extends AbstractController
         return $this->json('Operation success', Response::HTTP_OK);
     }
 
-    public function serializeContent(Content $content): string
+    public function serializeContent(Content|array $content): string
     {
         $context = [
             AbstractNormalizer::GROUPS => 'default',
