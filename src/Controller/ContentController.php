@@ -38,7 +38,7 @@ final class ContentController extends AbstractController
         private readonly SerializerInterface    $serializer,
         private readonly EntityManagerInterface $entityManager,
         private readonly FormHandlerService     $formHandlerService,
-        private readonly FileHandlerService $fileHandlerService,
+        private readonly FileHandlerService     $fileHandlerService,
     )
     {
     }
@@ -168,7 +168,7 @@ final class ContentController extends AbstractController
 
     #[OA\Response(
         response: Response::HTTP_CREATED, description: 'Successful',
-        content:  new OA\JsonContent(type: "string", example: 'Operation success')
+        content: new OA\JsonContent(type: "string", example: 'Operation success')
     )]
     #[Route('/{id}', name: 'delete', methods: ['DELETE'], format: 'json')]
     public function delete(Content $content): JsonResponse
@@ -185,21 +185,48 @@ final class ContentController extends AbstractController
         return $this->json(['errors' => ['You are not allowed for this action']], Response::HTTP_FORBIDDEN);
     }
 
+    #[OA\Response(
+        response: Response::HTTP_CREATED, description: 'Successful',
+        content: new OA\JsonContent(type: "string", example: 'Operation success')
+    )]
+    #[Route('/{id}/rate', name: 'rate', methods: ['POST'], format: 'json')]
+    public function rate(Content $content): JsonResponse
+    {
+        $user = $this->getUser();
 
+        return $this->json('Operation success', Response::HTTP_SEE_OTHER);
 
+    }
 
+    #[OA\Response(
+        response: Response::HTTP_CREATED, description: 'Successful',
+        content: new OA\JsonContent(type: "string", example: 'Operation success')
+    )]
+    #[Route('/{id}/favorite', name: 'add_favorite', methods: ['POST'], format: 'json')]
+    public function addFavorite(Content $content): JsonResponse
+    {
+        if ($user = $this->getUser()) {
+            $user->addFavorite($content);
+            $this->entityManager->persist($user);
+            $this->entityManager->flush();
+        }
+        return $this->json('Operation success', Response::HTTP_SEE_OTHER);
+    }
 
-
-
-
-
-
-
-
-
-
-
-
+    #[OA\Response(
+        response: Response::HTTP_CREATED, description: 'Successful',
+        content: new OA\JsonContent(type: "string", example: 'Operation success')
+    )]
+    #[Route('/{id}/favorite', name: 'remove_favorite', methods: ['DELETE'], format: 'json')]
+    public function removeFavorite(Content $content): JsonResponse
+    {
+        if ($user = $this->getUser()) {
+            $user->removeFavorite($content);
+            $this->entityManager->persist($user);
+            $this->entityManager->flush();
+        }
+        return $this->json('Operation success', Response::HTTP_SEE_OTHER);
+    }
 
     public function serializeContent(
         Content $content

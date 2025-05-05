@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\JoinTable;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -47,6 +48,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Ignore]
     private Collection $contents;
 
+    #[ORM\ManyToMany(targetEntity: Content::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[JoinTable(name: '`user_favorites`')]
+    #[Ignore]
+    private Collection $favorites;
+
     #[ORM\OneToMany(targetEntity: AccessToken::class, mappedBy: 'ownedBy', orphanRemoval: true)]
     #[Ignore]
     private Collection $accessTokens;
@@ -55,6 +61,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->contents = new ArrayCollection();
         $this->accessTokens = new ArrayCollection();
+        $this->favorites = new ArrayCollection();
         //DEFAULT ROLE
         $this->roles = ['ROLE_USER'];
     }
@@ -149,5 +156,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->accessTokens;
     }
+
+    public function addFavorite(Content $content): void
+    {
+        if (!$this->favorites->contains($content)) {
+            $this->favorites[] = $content;
+        }
+    }
+
+    public function removeFavorite(Content $content): void
+    {
+        if ($this->favorites->contains($content)) {
+            $this->favorites->removeElement($content);
+        }
+    }
+
 
 }
