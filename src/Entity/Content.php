@@ -4,12 +4,15 @@ namespace App\Entity;
 
 use App\Repository\ContentRepository;
 use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Attribute\Ignore;
+use Symfony\Component\Serializer\Attribute\MaxDepth;
 use Symfony\Component\Serializer\Attribute\SerializedPath;
 
 #[ORM\Entity(repositoryClass: ContentRepository::class)]
@@ -32,20 +35,20 @@ class Content
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(["default"])]
-    private ?Datetime $createdAt;
+    private ?DateTimeImmutable $createdAt;
 
     #[ORM\ManyToOne(targetEntity: User::class, fetch: 'EXTRA_LAZY', inversedBy: 'contents')]
-    #[SerializedPath('[createdBy][username]')]
-    #[Groups(["default"])]
+    #[Ignore]
     private User|UserInterface $createdBy;
 
-    #[ORM\OneToMany(targetEntity: Medias::class, mappedBy: 'content', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Media::class, mappedBy: 'content', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[Groups(["default", "create"])]
     private Collection $medias;
 
     public function __construct(User|UserInterface $user)
     {
         $this->createdBy = $user;
-        $this->createdAt = new DateTime('now');
+        $this->createdAt = new DateTimeImmutable();
         $this->medias = new ArrayCollection();
     }
 
@@ -78,12 +81,12 @@ class Content
         return $this;
     }
 
-    public function getCreatedAt(): ?DateTime
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(?DateTime $createdAt): void
+    public function setCreatedAt(?DateTimeImmutable $createdAt): void
     {
         $this->createdAt = $createdAt;
     }
@@ -101,6 +104,24 @@ class Content
     public function getMedias(): Collection
     {
         return $this->medias;
+    }
+
+    public function addMedia(Media $medias): void
+    {
+        if (!$this->medias->contains($medias)) {
+            $this->medias[] = $medias;
+            $medias->setContent($this);
+        }
+    }
+
+    public function removeMedia(Media $medias): void
+    {
+        if ($this->medias->contains($medias)) {
+            $this->medias->removeElement($medias);
+            if ($medias->getContent() === $this) {
+                $medias->setContent(null);
+            }
+        }
     }
 
 }

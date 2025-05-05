@@ -43,9 +43,7 @@ final class SecurityController extends AbstractController
     ): JsonResponse
     {
         if (!$user) {
-            return $this->json([
-                'message' => 'bad credentials',
-            ], Response::HTTP_UNAUTHORIZED);
+            return $this->json(['errors' => 'bad credentials'], Response::HTTP_UNAUTHORIZED);
         }
 
         $token = new AccessToken($user);

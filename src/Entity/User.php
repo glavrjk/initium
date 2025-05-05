@@ -44,7 +44,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\OneToMany(targetEntity: Content::class, mappedBy: 'createdBy', cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[Groups(["default"])]
+    #[Ignore]
     private Collection $contents;
 
     #[ORM\OneToMany(targetEntity: AccessToken::class, mappedBy: 'ownedBy', orphanRemoval: true)]
