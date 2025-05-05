@@ -12,7 +12,7 @@ WORKDIR /var/www
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
-RUN install-php-extensions gd pdo_mysql bcmath zip intl opcache sodium curl xdebug imagick
+RUN install-php-extensions gd pdo_mysql bcmath zip intl opcache sodium curl xdebug imagick apfd
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 

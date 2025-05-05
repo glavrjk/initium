@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Entity\AccessToken;
 use App\Entity\User;
-use App\Form\UserForm;
+use App\Form\UserType;
 use App\Service\FormErrorService;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
@@ -75,19 +75,14 @@ final class SecurityController extends AbstractController
     ): JsonResponse
     {
         $user = new User();
-        $form = $this->createForm(UserForm::class, $user);
+        $form = $this->createForm(UserType::class, $user);
 
         try {
-            $data = $formErrorService->getRequestData($request);
+            $formErrorService->processRequest($request, $form);
         } catch (JsonException $e) {
-            return $this->json(['errors' => 'Invalid Request Body'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['errors' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
-        if (!isset($data['password'])) {
-            return $this->json(['errors' => 'Password cannot be empty'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $form->submit($data, false);
         if ($form->isSubmitted() && $form->isValid()) {
             //ENCODE PASSWORD
             $user->setPassword(

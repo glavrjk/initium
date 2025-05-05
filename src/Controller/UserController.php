@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Form\UserForm;
+use App\Form\UserType;
 use App\Service\FormErrorService;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
@@ -33,7 +33,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 )]
 final class UserController extends AbstractController
 {
-    #[Route(name: 'app_user_show', methods: ['GET'])]
+    #[Route(name: 'app_user_show', methods: ['GET'], format: 'json')]
     public function show(
         SerializerInterface $serializer
     ): JsonResponse
@@ -45,10 +45,11 @@ final class UserController extends AbstractController
         );
     }
 
-    #[Route(name: 'app_user_edit', methods: ['PUT'])]
+
     #[OA\RequestBody(
-        content: new Model(type: User::class, groups: ["create"])
+        content: new Model(type: UserType::class, groups: ["create"])
     )]
+    #[Route(name: 'app_user_edit', methods: [Request::METHOD_PUT], format: 'json')]
     public function edit(
         Request                     $request,
         UserPasswordHasherInterface $passwordEncoder,
@@ -58,30 +59,27 @@ final class UserController extends AbstractController
     ): JsonResponse
     {
         $user = $this->getUser();
-        $form = $this->createForm(UserForm::class, $user);
+        $form = $this->createForm(UserType::class, $user, ['method' => Request::METHOD_PUT]);
 
         try {
-            $data = $formErrorService->getRequestData($request);
+            $formErrorService->processRequest($request, $form);
         } catch (JsonException $e) {
-            return $this->json(['errors' => 'Invalid Request Body'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['errors' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
-        $form->submit($data, false);
-        if ($form->isSubmitted() && $form->isValid()) {
-
+        if ($user && $form->isSubmitted() && $form->isValid()) {
             if ($newPassword = $form->get('password')->getData()) {
                 //ENCODE PASSWORD
                 $user->setPassword(
                     $passwordEncoder->hashPassword($user, $newPassword)
                 );
             }
-
             $entityManager->persist($user);
             $entityManager->flush();
 
             return new JsonResponse(
                 data: $serializer->serialize($user, 'json', ['groups' => 'default']),
-                status: Response::HTTP_CREATED,
+                status: Response::HTTP_OK,
                 json: true
             );
         }
