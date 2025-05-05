@@ -58,7 +58,7 @@ final class SecurityController extends AbstractController
 
     #[Route('/register', name: 'register', methods: ['POST'])]
     #[OA\RequestBody(
-        content: new Model(type: User::class, groups: ["create"])
+        content: new Model(type: UserType::class)
     )]
     #[OA\Response(
         response: Response::HTTP_OK, description: 'Successful',

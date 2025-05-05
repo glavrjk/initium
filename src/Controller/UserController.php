@@ -45,7 +45,6 @@ final class UserController extends AbstractController
         );
     }
 
-
     #[OA\RequestBody(
         content: new Model(type: UserType::class, groups: ["create"])
     )]
