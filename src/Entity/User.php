@@ -48,7 +48,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Ignore]
     private Collection $contents;
 
-    #[ORM\ManyToMany(targetEntity: Content::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\ManyToMany(targetEntity: Content::class)]
     #[JoinTable(name: '`user_favorites`')]
     #[Ignore]
     private Collection $favorites;

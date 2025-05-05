@@ -3,7 +3,6 @@
 namespace App\Entity;
 
 use App\Repository\ContentRepository;
-use DateTime;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -12,8 +11,6 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Serializer\Attribute\Ignore;
-use Symfony\Component\Serializer\Attribute\MaxDepth;
-use Symfony\Component\Serializer\Attribute\SerializedPath;
 
 #[ORM\Entity(repositoryClass: ContentRepository::class)]
 #[ORM\Table(name: '`content`')]

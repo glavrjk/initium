@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Content;
+use App\Entity\ContentRate;
 use App\Entity\Media;
 use App\Form\ContentType;
 use App\Repository\ContentRepository;
@@ -18,10 +19,12 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api/content', name: 'app_content_')]
 #[IsGranted('ROLE_USER')]
@@ -39,6 +42,7 @@ final class ContentController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly FormHandlerService     $formHandlerService,
         private readonly FileHandlerService     $fileHandlerService,
+        private readonly ValidatorInterface     $validator,
     )
     {
     }
@@ -179,7 +183,7 @@ final class ContentController extends AbstractController
             }
             $this->entityManager->remove($content);
             $this->entityManager->flush();
-            return $this->json('Operation success', Response::HTTP_SEE_OTHER);
+            return $this->json('Operation success', Response::HTTP_OK);
         }
 
         return $this->json(['errors' => ['You are not allowed for this action']], Response::HTTP_FORBIDDEN);
@@ -189,13 +193,23 @@ final class ContentController extends AbstractController
         response: Response::HTTP_CREATED, description: 'Successful',
         content: new OA\JsonContent(type: "string", example: 'Operation success')
     )]
-    #[Route('/{id}/rate', name: 'rate', methods: ['POST'], format: 'json')]
-    public function rate(Content $content): JsonResponse
+    #[Route('/{id}/media/{mediaId}', name: 'media_delete', methods: ['DELETE'], format: 'json')]
+    public function deleteMedia(
+        Content $content,
+        Media   $mediaId
+    ): JsonResponse
     {
-        $user = $this->getUser();
+        if (
+            $content->getId() === $mediaId->getContent()->getId() &&
+            $this->getUser()->getUserIdentifier() === $content->getCreatedBy()->getUserIdentifier()
+        ) {
+            $this->fileHandlerService->remove($mediaId->getFileName());
+            $this->entityManager->remove($mediaId);
+            $this->entityManager->flush();
+            return $this->json('Operation success', Response::HTTP_OK);
+        }
 
-        return $this->json('Operation success', Response::HTTP_SEE_OTHER);
-
+        return $this->json(['errors' => ['You are not allowed for this action']], Response::HTTP_FORBIDDEN);
     }
 
     #[OA\Response(
@@ -210,7 +224,7 @@ final class ContentController extends AbstractController
             $this->entityManager->persist($user);
             $this->entityManager->flush();
         }
-        return $this->json('Operation success', Response::HTTP_SEE_OTHER);
+        return $this->json('Operation success', Response::HTTP_OK);
     }
 
     #[OA\Response(
@@ -225,12 +239,29 @@ final class ContentController extends AbstractController
             $this->entityManager->persist($user);
             $this->entityManager->flush();
         }
-        return $this->json('Operation success', Response::HTTP_SEE_OTHER);
+        return $this->json('Operation success', Response::HTTP_OK);
     }
 
-    public function serializeContent(
-        Content $content
-    ): string
+    #[OA\Response(
+        response: Response::HTTP_CREATED, description: 'Successful',
+        content: new OA\JsonContent(type: "string", example: 'Operation success')
+    )]
+    #[Route('/{id}/rate', name: 'rate', methods: ['POST'], format: 'json')]
+    public function rate(
+        Content                          $content,
+        #[MapRequestPayload] ContentRate $contentRate
+    ): JsonResponse
+    {
+        if ($user = $this->getUser()) {
+            $contentRate->setContent($content);
+            $contentRate->setUser($user);
+            $this->entityManager->persist($contentRate);
+            $this->entityManager->flush();
+        }
+        return $this->json('Operation success', Response::HTTP_OK);
+    }
+
+    public function serializeContent(Content $content): string
     {
         $context = [
             AbstractNormalizer::GROUPS => 'default',
