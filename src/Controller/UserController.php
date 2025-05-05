@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Form\UserType;
-use App\Service\FormErrorService;
+use App\Service\FormHandlerService;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
 use Nelmio\ApiDocBundle\Attribute\Model;
@@ -54,7 +54,7 @@ final class UserController extends AbstractController
         Request                     $request,
         UserPasswordHasherInterface $passwordEncoder,
         EntityManagerInterface      $entityManager,
-        FormErrorService            $formErrorService,
+        FormHandlerService          $formHandlerService,
         SerializerInterface         $serializer
     ): JsonResponse
     {
@@ -62,7 +62,7 @@ final class UserController extends AbstractController
         $form = $this->createForm(UserType::class, $user, ['method' => Request::METHOD_PUT]);
 
         try {
-            $formErrorService->processRequest($request, $form);
+            $formHandlerService->processRequest($request, $form);
         } catch (JsonException $e) {
             return $this->json(['errors' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
@@ -84,7 +84,7 @@ final class UserController extends AbstractController
             );
         }
 
-        return $this->json($formErrorService->getErrorMessages($form), Response::HTTP_BAD_REQUEST);
+        return $this->json($formHandlerService->getErrorMessages($form), Response::HTTP_BAD_REQUEST);
     }
 
 }
